@@ -11,20 +11,31 @@ export function NoteSpaces({ noteId }: { noteId: string }) {
   const removeSpace = useRemoveNoteFromSpace(noteId);
   const [selectedSpaceId, setSelectedSpaceId] = useState("");
   const [newSpaceName, setNewSpaceName] = useState("");
+  const [error, setError] = useState("");
   const linkedSpaceIds = new Set(links.map((link) => link.space_id));
   const availableSpaces = spaces.filter((space) => !linkedSpaceIds.has(space.id));
 
   async function linkSelected() {
+    setError("");
     if (!selectedSpaceId) return;
-    await addSpace.mutateAsync({ note_id: noteId, space_id: selectedSpaceId });
-    setSelectedSpaceId("");
+    try {
+      await addSpace.mutateAsync({ note_id: noteId, space_id: selectedSpaceId });
+      setSelectedSpaceId("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not add space.");
+    }
   }
 
   async function createAndLink() {
+    setError("");
     if (!newSpaceName.trim()) return;
-    const space = await createSpace.mutateAsync({ name: newSpaceName });
-    await addSpace.mutateAsync({ note_id: noteId, space_id: space.id });
-    setNewSpaceName("");
+    try {
+      const space = await createSpace.mutateAsync({ name: newSpaceName });
+      await addSpace.mutateAsync({ note_id: noteId, space_id: space.id });
+      setNewSpaceName("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not create space.");
+    }
   }
 
   return (
@@ -59,6 +70,7 @@ export function NoteSpaces({ noteId }: { noteId: string }) {
         <input className="min-w-0 flex-1 rounded border border-vault-line bg-transparent px-3 py-2 text-sm dark:border-zinc-700" value={newSpaceName} onChange={(event) => setNewSpaceName(event.target.value)} placeholder="New space" />
         <Button size="sm" variant="secondary" onClick={createAndLink} disabled={createSpace.isPending || addSpace.isPending}><Plus size={15} /> Create</Button>
       </div>
+      {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
     </section>
   );
 }

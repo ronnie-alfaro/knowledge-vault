@@ -14,13 +14,19 @@ export function SpacesTree() {
   const { data: spaces = [], isLoading } = useSpaces();
   const createSpace = useCreateSpace();
   const [name, setName] = useState("");
+  const [error, setError] = useState("");
   const tree = useMemo(() => buildTree(spaces), [spaces]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
+    setError("");
     if (!name.trim()) return;
-    await createSpace.mutateAsync({ name });
-    setName("");
+    try {
+      await createSpace.mutateAsync({ name });
+      setName("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not create space.");
+    }
   }
 
   return (
@@ -45,6 +51,7 @@ export function SpacesTree() {
           <Plus size={14} />
         </Button>
       </form>
+      {error ? <p className="px-2 text-xs text-red-600">{error}</p> : null}
     </section>
   );
 }
