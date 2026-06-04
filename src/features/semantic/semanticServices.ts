@@ -6,7 +6,18 @@ type SourceType = "note" | "node";
 
 async function invokeSemantic<T>(body: Record<string, unknown>) {
   const { data, error } = await supabase.functions.invoke("semantic_embeddings", { body });
-  if (error) throw error;
+  if (error) {
+    const context = "context" in error ? error.context : undefined;
+    if (context instanceof Response) {
+      try {
+        const payload = await context.clone().json() as { error?: string; message?: string };
+        throw new Error(payload.error ?? payload.message ?? error.message);
+      } catch {
+        throw error;
+      }
+    }
+    throw error;
+  }
   return data as T;
 }
 

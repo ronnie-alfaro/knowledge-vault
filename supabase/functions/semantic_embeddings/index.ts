@@ -23,6 +23,7 @@ serve(async (req) => {
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } }
     });
+    await requireAuthenticatedUser(supabase);
 
     const body = await req.json() as RequestBody;
     switch (body.action) {
@@ -49,8 +50,7 @@ serve(async (req) => {
 async function upsertEmbedding(supabase: ReturnType<typeof createClient>, sourceType: SourceType, sourceId: string, content: string) {
   const normalized = normalizeContent(content);
   const contentHash = await sha256(normalized);
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError || !userData.user) throw userError ?? new Error("Not authenticated");
+  const user = await requireAuthenticatedUser(supabase);
 
   const { data: existing, error: existingError } = await supabase
     .from("content_embeddings")
@@ -66,7 +66,7 @@ async function upsertEmbedding(supabase: ReturnType<typeof createClient>, source
   const { data, error } = await supabase
     .from("content_embeddings")
     .upsert({
-      user_id: userData.user.id,
+      user_id: user.id,
       source_type: sourceType,
       source_id: sourceId,
       content: normalized,
@@ -79,6 +79,12 @@ async function upsertEmbedding(supabase: ReturnType<typeof createClient>, source
     .single();
   if (error) throw error;
   return { skipped: false, embedding: data };
+}
+
+async function requireAuthenticatedUser(supabase: ReturnType<typeof createClient>) {
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) throw error ?? new Error("Not authenticated");
+  return data.user;
 }
 
 async function semanticSearch(supabase: ReturnType<typeof createClient>, query: string, limit: number) {

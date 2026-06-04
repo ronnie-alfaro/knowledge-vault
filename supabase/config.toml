@@ -33,3 +33,6 @@ file_size_limit = "25MiB"
 
 [edge_runtime]
 enabled = true
+
+[functions.semantic_embeddings]
+verify_jwt = false
