@@ -125,7 +125,7 @@ Deploy:
 ```bash
 supabase functions deploy summarize_note
 supabase functions deploy semantic_embeddings
-supabase secrets set OPENAI_API_KEY=sk-your-key
+supabase secrets set OPENAI_EMBEDDINGS=sk-your-key
 ```
 
 ## Semantic Embeddings
@@ -142,7 +142,7 @@ Phase 2 uses embeddings only. It does not add chat, agents, entity extraction, o
 Required Supabase Edge Function secret:
 
 ```bash
-supabase secrets set OPENAI_API_KEY=sk-your-key
+supabase secrets set OPENAI_EMBEDDINGS=sk-your-key
 ```
 
 ## Deployment

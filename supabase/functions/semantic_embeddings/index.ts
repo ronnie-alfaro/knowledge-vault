@@ -99,8 +99,8 @@ async function assertSourceOwnership(supabase: ReturnType<typeof createClient>, 
 }
 
 export async function generateEmbedding(text: string) {
-  const apiKey = Deno.env.get("OPENAI_API_KEY");
-  if (!apiKey) throw new Error("OPENAI_API_KEY is not configured");
+  const apiKey = Deno.env.get("OPENAI_EMBEDDINGS");
+  if (!apiKey) throw new Error("OPENAI_EMBEDDINGS is not configured");
   const response = await fetch("https://api.openai.com/v1/embeddings", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
