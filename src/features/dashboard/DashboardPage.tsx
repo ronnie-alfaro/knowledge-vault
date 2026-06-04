@@ -2,6 +2,8 @@ import { BookOpen, Files, Tag } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../../shared/lib/supabase";
 
+type DashboardStats = { total_notes: number; total_tags: number; total_files: number };
+
 export function DashboardPage() {
   const stats = useQuery({
     queryKey: ["dashboard"],
@@ -9,14 +11,14 @@ export function DashboardPage() {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error("Not authenticated");
       const [statRes, activityRes, tagsRes] = await Promise.all([
-        supabase.from("dashboard_stats").select("*").eq("user_id", userData.user.id).single(),
+        supabase.rpc("get_dashboard_stats").single(),
         supabase.from("activity_events").select("*").order("created_at", { ascending: false }).limit(8),
         supabase.from("note_tags").select("tags(name, color)").limit(20)
       ]);
       if (statRes.error) throw statRes.error;
       if (activityRes.error) throw activityRes.error;
       if (tagsRes.error) throw tagsRes.error;
-      return { stats: statRes.data, activity: activityRes.data, tags: tagsRes.data };
+      return { stats: statRes.data as DashboardStats, activity: activityRes.data, tags: tagsRes.data };
     }
   });
   const cards = [

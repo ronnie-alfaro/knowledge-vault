@@ -69,10 +69,12 @@ export type Database = {
         Update: never;
       };
     };
-    Views: {
-      dashboard_stats: { Row: { user_id: string; total_notes: number; total_tags: number; total_files: number } };
-    };
+    Views: Record<string, never>;
     Functions: {
+      get_dashboard_stats: {
+        Args: Record<string, never>;
+        Returns: Array<{ total_notes: number; total_tags: number; total_files: number }>;
+      };
       search_notes: {
         Args: { search_query: string; tag_filter?: string | null; include_archived?: boolean; space_filter?: string | null };
         Returns: Array<{ id: string; title: string; content: string; updated_at: string; favorite: boolean; archived: boolean; rank: number }>;

@@ -89,8 +89,9 @@ Apply the migrations in order:
 1. `supabase/migrations/20260603000000_initial_schema.sql`
 2. `supabase/migrations/20260603010000_knowledge_graph_layer.sql`
 3. `supabase/migrations/20260604000000_spaces_layer.sql`
+4. `supabase/migrations/20260604010000_replace_dashboard_stats_view.sql`
 
-They create the database schema, RLS policies, Storage buckets, full-text search, sharing RPC, dashboard view, knowledge graph tables, Spaces, and Realtime publications.
+They create the database schema, RLS policies, Storage buckets, full-text search, sharing RPC, dashboard RPC, knowledge graph tables, Spaces, and Realtime publications.
 
 For hosted Supabase, configure Auth providers:
 
