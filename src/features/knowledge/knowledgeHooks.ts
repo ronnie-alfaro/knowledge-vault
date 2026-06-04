@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../shared/lib/supabase";
 import type { KnowledgeNode, KnowledgeNodeType, NodeNoteLink, NodeRelation, Note, RelationType } from "../../shared/lib/database.types";
+import { reportEmbeddingError, upsertNodeEmbedding } from "../semantic/semanticServices";
 
 async function requireUserId() {
   const { data } = await supabase.auth.getUser();
@@ -18,6 +19,7 @@ export async function createKnowledgeNode(input: { title: string; type: Knowledg
     .select()
     .single();
   if (error) throw error;
+  upsertNodeEmbedding(data as KnowledgeNode).catch(reportEmbeddingError);
   return data as KnowledgeNode;
 }
 
@@ -27,6 +29,7 @@ export async function updateKnowledgeNode(nodeId: string, patch: Partial<Pick<Kn
   if (next.title !== undefined && !next.title) throw new Error("Node title is required");
   const { data, error } = await supabase.from("knowledge_nodes").update(next).eq("id", nodeId).select().single();
   if (error) throw error;
+  upsertNodeEmbedding(data as KnowledgeNode).catch(reportEmbeddingError);
   return data as KnowledgeNode;
 }
 

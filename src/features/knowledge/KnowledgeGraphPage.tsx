@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../../shared/components/Button";
 import { knowledgeNodeTypes, relationTypes, type KnowledgeNode, type KnowledgeNodeType, type NodeRelation, type RelationType } from "../../shared/lib/database.types";
+import { RelatedConcepts } from "../semantic/RelatedConcepts";
 import { useCreateNodeRelation, useKnowledgeNodes, useNodeRelations, useNoteLinksForNode, useRelationsForNode } from "./knowledgeHooks";
 
 export function KnowledgeGraphPage() {
@@ -78,6 +79,7 @@ export function KnowledgeGraphPage() {
                 <p className="mt-4 text-sm text-zinc-700 dark:text-zinc-300">{selectedNode.description || "No description yet."}</p>
               </section>
               <NodeNotes nodeId={selectedNode.id} />
+              <RelatedConcepts nodeId={selectedNode.id} />
               <section className="grid gap-4 md:grid-cols-2">
                 <RelationList title="Outgoing" relations={outgoing} nodes={allNodes} empty={relationsLoading ? "Loading..." : "No outgoing relations."} />
                 <RelationList title="Incoming" relations={incoming} nodes={allNodes} empty={relationsLoading ? "Loading..." : "No incoming relations."} />

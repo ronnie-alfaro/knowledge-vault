@@ -9,6 +9,7 @@ import { stripHtml } from "../../shared/lib/utils";
 import { useAssignTag, useCreateTag, useRemoveTag, useTags } from "../tags/tagHooks";
 import { NoteKnowledgeNodes } from "../knowledge/NoteKnowledgeNodes";
 import { NoteSpaces } from "../spaces/NoteSpaces";
+import { RelatedNotes } from "../semantic/RelatedNotes";
 import { useDeleteNote, useNote, useUpdateNote } from "./noteHooks";
 import { RichTextEditor } from "./RichTextEditor";
 
@@ -87,6 +88,7 @@ export function NoteDetailPage() {
       </div>
       <aside className="space-y-4">
         <NoteSpaces noteId={note.id} />
+        <RelatedNotes noteId={note.id} />
         <NoteKnowledgeNodes noteId={note.id} />
         <section className="rounded border border-vault-line bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
           <h2 className="font-semibold">Tags</h2>

@@ -48,6 +48,11 @@ export type Database = {
         Insert: { note_id: string; summary: string; keywords: string[]; suggested_tags: string[]; generated_at?: string };
         Update: { summary?: string; keywords?: string[]; suggested_tags?: string[]; generated_at?: string };
       };
+      content_embeddings: {
+        Row: { id: string; user_id: string; source_type: "note" | "node"; source_id: string; content: string; content_hash: string; embedding: unknown | null; embedding_model: string; created_at: string; updated_at: string };
+        Insert: { id?: string; user_id: string; source_type: "note" | "node"; source_id: string; content: string; content_hash: string; embedding?: unknown | null; embedding_model: string; created_at?: string; updated_at?: string };
+        Update: { content?: string; content_hash?: string; embedding?: unknown | null; embedding_model?: string; updated_at?: string };
+      };
       knowledge_nodes: {
         Row: { id: string; user_id: string; title: string; type: string; description: string | null; source_note_id: string | null; metadata: Json; created_at: string; updated_at: string };
         Insert: { id?: string; user_id: string; title: string; type: string; description?: string | null; source_note_id?: string | null; metadata?: Json; created_at?: string; updated_at?: string };
@@ -75,6 +80,22 @@ export type Database = {
         Args: Record<string, never>;
         Returns: Array<{ total_notes: number; total_tags: number; total_files: number }>;
       };
+      match_similar_notes: {
+        Args: { target_note_id: string; match_count?: number };
+        Returns: Array<{ note_id: string; title: string; content: string; updated_at: string; score: number }>;
+      };
+      match_similar_nodes: {
+        Args: { target_node_id: string; match_count?: number };
+        Returns: Array<{ node_id: string; title: string; type: string; description: string | null; score: number }>;
+      };
+      semantic_search_content: {
+        Args: { query_embedding: unknown; match_count?: number };
+        Returns: Array<{ source_type: "note" | "node"; source_id: string; title: string; preview: string | null; score: number }>;
+      };
+      suggested_node_connections: {
+        Args: { similarity_threshold?: number; match_count?: number };
+        Returns: Array<{ source_node_id: string; source_title: string; target_node_id: string; target_title: string; score: number; suggested_relation: "related_to" | "similar_to" }>;
+      };
       search_notes: {
         Args: { search_query: string; tag_filter?: string | null; include_archived?: boolean; space_filter?: string | null };
         Returns: Array<{ id: string; title: string; content: string; updated_at: string; favorite: boolean; archived: boolean; rank: number }>;
@@ -91,6 +112,7 @@ export type Note = Database["public"]["Tables"]["notes"]["Row"];
 export type Tag = Database["public"]["Tables"]["tags"]["Row"];
 export type Space = Database["public"]["Tables"]["spaces"]["Row"];
 export type NoteSpace = Database["public"]["Tables"]["note_spaces"]["Row"];
+export type ContentEmbedding = Database["public"]["Tables"]["content_embeddings"]["Row"];
 export type KnowledgeNode = Database["public"]["Tables"]["knowledge_nodes"]["Row"];
 export type NodeRelation = Database["public"]["Tables"]["node_relations"]["Row"];
 export type NodeNoteLink = Database["public"]["Tables"]["node_note_links"]["Row"];

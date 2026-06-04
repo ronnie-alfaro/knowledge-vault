@@ -24,6 +24,7 @@ Production-quality personal knowledge management app inspired by Notion, Obsidia
 - PostgreSQL full-text search across title, content, and tags
 - Strict Row Level Security for private user data
 - `summarize_note` Edge Function with swappable AI provider architecture
+- Semantic embeddings with `text-embedding-3-small`, pgvector search, related content, and suggested connections
 - Responsive dark-mode UI with sidebar navigation
 
 ## Folder Structure
@@ -50,6 +51,7 @@ supabase/
   migrations/
   functions/
     summarize_note/
+    semantic_embeddings/
 ```
 
 ## Local Development
@@ -90,8 +92,9 @@ Apply the migrations in order:
 2. `supabase/migrations/20260603010000_knowledge_graph_layer.sql`
 3. `supabase/migrations/20260604000000_spaces_layer.sql`
 4. `supabase/migrations/20260604010000_replace_dashboard_stats_view.sql`
+5. `supabase/migrations/20260604040000_semantic_embeddings.sql`
 
-They create the database schema, RLS policies, Storage buckets, full-text search, sharing RPC, dashboard RPC, knowledge graph tables, Spaces, and Realtime publications.
+They create the database schema, RLS policies, Storage buckets, full-text search, sharing RPC, dashboard RPC, knowledge graph tables, Spaces, pgvector embeddings, and Realtime publications.
 
 For hosted Supabase, configure Auth providers:
 
@@ -121,6 +124,25 @@ Deploy:
 
 ```bash
 supabase functions deploy summarize_note
+supabase functions deploy semantic_embeddings
+supabase secrets set OPENAI_API_KEY=sk-your-key
+```
+
+## Semantic Embeddings
+
+Phase 2 uses embeddings only. It does not add chat, agents, entity extraction, or question generation.
+
+- Model: `text-embedding-3-small`
+- Table: `content_embeddings`
+- Source types: `note`, `node`
+- One row per `(source_type, source_id)`
+- Content hashes prevent repeated OpenAI calls when content did not change
+- pgvector powers related notes, related concepts, semantic search, and suggested node connections
+
+Required Supabase Edge Function secret:
+
+```bash
+supabase secrets set OPENAI_API_KEY=sk-your-key
 ```
 
 ## Deployment
