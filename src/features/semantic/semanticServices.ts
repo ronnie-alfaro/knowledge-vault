@@ -1,24 +1,40 @@
 import { supabase } from "../../shared/lib/supabase";
+import { env } from "../../shared/lib/env";
 import { stripHtml } from "../../shared/lib/utils";
 import type { RelatedNode, RelatedNote, SemanticSearchResult, SuggestedConnection } from "./semanticTypes";
 
 type SourceType = "note" | "node";
 
 async function invokeSemantic<T>(body: Record<string, unknown>) {
-  const { data, error } = await supabase.functions.invoke("semantic_embeddings", { body });
-  if (error) {
-    const context = "context" in error ? error.context : undefined;
-    if (context instanceof Response) {
-      try {
-        const payload = await context.clone().json() as { error?: string; message?: string };
-        throw new Error(payload.error ?? payload.message ?? error.message);
-      } catch {
-        throw error;
-      }
-    }
-    throw error;
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error("Sign in again before using semantic features.");
+
+  const response = await fetch(`${env.VITE_SUPABASE_URL}/functions/v1/semantic_embeddings`, {
+    method: "POST",
+    headers: {
+      apikey: env.VITE_SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+
+  const text = await response.text();
+  const payload = parseResponse(text);
+  if (!response.ok) {
+    throw new Error(payload?.error ?? payload?.message ?? (text || `Semantic function failed with ${response.status}`));
   }
-  return data as T;
+  return payload as T;
+}
+
+function parseResponse(text: string) {
+  if (!text) return null;
+  try {
+    return JSON.parse(text) as { error?: string; message?: string };
+  } catch {
+    return { message: text };
+  }
 }
 
 export async function generateEmbedding(text: string) {
