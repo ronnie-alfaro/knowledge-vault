@@ -38,6 +38,21 @@ export type Database = {
         Insert: { note_id: string; summary: string; keywords: string[]; suggested_tags: string[]; generated_at?: string };
         Update: { summary?: string; keywords?: string[]; suggested_tags?: string[]; generated_at?: string };
       };
+      knowledge_nodes: {
+        Row: { id: string; user_id: string; title: string; type: string; description: string | null; source_note_id: string | null; metadata: Json; created_at: string; updated_at: string };
+        Insert: { id?: string; user_id: string; title: string; type: string; description?: string | null; source_note_id?: string | null; metadata?: Json; created_at?: string; updated_at?: string };
+        Update: { title?: string; type?: string; description?: string | null; source_note_id?: string | null; metadata?: Json; updated_at?: string };
+      };
+      node_relations: {
+        Row: { id: string; user_id: string; source_node_id: string; target_node_id: string; relation_type: string; strength: number | null; description: string | null; created_at: string };
+        Insert: { id?: string; user_id: string; source_node_id: string; target_node_id: string; relation_type: string; strength?: number | null; description?: string | null; created_at?: string };
+        Update: { relation_type?: string; strength?: number | null; description?: string | null };
+      };
+      node_note_links: {
+        Row: { id: string; user_id: string; node_id: string; note_id: string; link_type: string | null; created_at: string };
+        Insert: { id?: string; user_id: string; node_id: string; note_id: string; link_type?: string | null; created_at?: string };
+        Update: { link_type?: string | null };
+      };
       activity_events: {
         Row: { id: string; user_id: string; event_type: string; subject_id: string | null; subject_title: string | null; created_at: string };
         Insert: { id?: string; user_id: string; event_type: string; subject_id?: string | null; subject_title?: string | null };
@@ -62,3 +77,12 @@ export type Database = {
 
 export type Note = Database["public"]["Tables"]["notes"]["Row"];
 export type Tag = Database["public"]["Tables"]["tags"]["Row"];
+export type KnowledgeNode = Database["public"]["Tables"]["knowledge_nodes"]["Row"];
+export type NodeRelation = Database["public"]["Tables"]["node_relations"]["Row"];
+export type NodeNoteLink = Database["public"]["Tables"]["node_note_links"]["Row"];
+
+export const knowledgeNodeTypes = ["note", "concept", "person", "project", "question", "book", "article", "place", "event", "idea"] as const;
+export type KnowledgeNodeType = (typeof knowledgeNodeTypes)[number];
+
+export const relationTypes = ["related_to", "inspired_by", "contradicts", "supports", "part_of", "mentions", "expands", "answers", "asks", "similar_to"] as const;
+export type RelationType = (typeof relationTypes)[number];

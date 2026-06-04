@@ -1,4 +1,4 @@
-import { BookOpen, Files, LayoutDashboard, LogOut, Moon, Search, Settings, Sun } from "lucide-react";
+import { BookOpen, Files, GitBranch, LayoutDashboard, LogOut, Moon, Search, Settings, Sun } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Button } from "../components/Button";
@@ -10,6 +10,7 @@ import { PresenceStrip } from "../../features/realtime/PresenceStrip";
 const nav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/notes", label: "Notes", icon: BookOpen },
+  { href: "/knowledge", label: "Knowledge Graph", icon: GitBranch },
   { href: "/files", label: "Files", icon: Files },
   { href: "/profile", label: "Profile", icon: Settings }
 ];

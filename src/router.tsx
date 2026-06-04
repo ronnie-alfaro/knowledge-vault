@@ -9,6 +9,7 @@ import { DashboardPage } from "./features/dashboard/DashboardPage";
 import { NotesPage } from "./features/notes/NotesPage";
 import { NoteDetailPage } from "./features/notes/NoteDetailPage";
 import { FilesPage } from "./features/files/FilesPage";
+import { KnowledgeGraphPage } from "./features/knowledge/KnowledgeGraphPage";
 import { ProfilePage } from "./features/profile/ProfilePage";
 import { SharedNotePage } from "./features/sharing/SharedNotePage";
 import { ErrorBoundary } from "./shared/components/ErrorBoundary";
@@ -30,6 +31,7 @@ export const router = createBrowserRouter([
           { path: "/dashboard", element: <DashboardPage /> },
           { path: "/notes", element: <NotesPage /> },
           { path: "/notes/:noteId", element: <NoteDetailPage /> },
+          { path: "/knowledge", element: <KnowledgeGraphPage /> },
           { path: "/files", element: <FilesPage /> },
           { path: "/profile", element: <ProfilePage /> }
         ]
