@@ -8,7 +8,7 @@ Production-quality personal knowledge management app inspired by Notion, Obsidia
 - React Router and TanStack Query
 - Supabase Auth, Database, Storage, Realtime, Edge Functions
 - Vitest and Testing Library
-- Deployable to Vercel or Cloudflare Pages
+- Deployable to Cloudflare Workers static assets
 
 ## Features
 
@@ -123,12 +123,25 @@ supabase functions deploy summarize_note
 3. Build command: `npm run build`
 4. Output directory: `dist`
 
-### Cloudflare Pages
+### Cloudflare Workers
 
-1. Connect the repository.
-2. Build command: `npm run build`
-3. Output directory: `dist`
-4. Add the same environment variables.
+1. Connect the repository or deploy with Wrangler.
+2. Build command: `pnpm build`
+3. Deploy command: `pnpm deploy:worker`
+4. Add Worker variables because this repo includes a minimal Worker script:
+   - `SUPABASE_URL`
+   - `SUPABASE_ANON_KEY`
+   - `APP_URL`
+
+The deployed app reads `/api/config` at runtime. Local Vite development still reads `.env` values named `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and `VITE_APP_URL`.
+
+For local Wrangler testing, copy `.dev.vars.example` to `.dev.vars` and set:
+
+```bash
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-supabase-publishable-key
+APP_URL=http://localhost:8787
+```
 
 ## Quality Checks
 
