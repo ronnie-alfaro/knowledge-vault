@@ -2,6 +2,9 @@
   "name": "knowledge-vault",
   "main": "src/worker.ts",
   "compatibility_date": "2026-06-04",
+  "vars": {
+    "SUPABASE_URL": "https://nbozjrvrsltmsjnnaqqk.supabase.co"
+  },
   "assets": {
     "binding": "ASSETS",
     "directory": "./dist/",

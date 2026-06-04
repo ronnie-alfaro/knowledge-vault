@@ -137,10 +137,10 @@ supabase functions deploy summarize_note
 1. Connect the repository or deploy with Wrangler.
 2. Build command: `pnpm build`
 3. Deploy command: `pnpm deploy:worker`
-4. Add Worker variables because this repo includes a minimal Worker script:
-   - `SUPABASE_URL`
-   - `SUPABASE_ANON_KEY`
-   - `APP_URL`
+4. Keep non-sensitive Worker variables in `wrangler.jsonc` and add secrets in Cloudflare:
+   - `SUPABASE_URL` is versioned in `wrangler.jsonc`
+   - `SUPABASE_ANON_KEY` should be added as a Worker secret
+   - `APP_URL` is optional because the Worker falls back to the request origin
 
 The deployed app reads `/api/config` at runtime. Local Vite development still reads `.env` values named `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and `VITE_APP_URL`.
 
