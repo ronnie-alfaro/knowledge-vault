@@ -16,6 +16,7 @@ Production-quality personal knowledge management app inspired by Notion, Obsidia
 - Profiles with editable display name, bio, and avatar uploads
 - Rich text notes with create, edit, delete, archive, favorite, search, and sorting
 - Tags with note assignment, removal, and filtering
+- Spaces with tree navigation and many-to-many note grouping
 - File uploads for images, PDFs, and documents with metadata stored in Postgres
 - Realtime note updates, presence, and activity-ready notifications
 - Public read-only note sharing by secure token with optional expiration
@@ -37,6 +38,7 @@ src/
     profile/
     realtime/
     sharing/
+    spaces/
     tags/
   shared/
     components/
@@ -82,7 +84,13 @@ npm run dev
 
 ## Supabase Setup
 
-Apply `supabase/migrations/20260603000000_initial_schema.sql`. It creates the database schema, RLS policies, Storage buckets, full-text search, sharing RPC, dashboard view, and Realtime publications.
+Apply the migrations in order:
+
+1. `supabase/migrations/20260603000000_initial_schema.sql`
+2. `supabase/migrations/20260603010000_knowledge_graph_layer.sql`
+3. `supabase/migrations/20260604000000_spaces_layer.sql`
+
+They create the database schema, RLS policies, Storage buckets, full-text search, sharing RPC, dashboard view, knowledge graph tables, Spaces, and Realtime publications.
 
 For hosted Supabase, configure Auth providers:
 

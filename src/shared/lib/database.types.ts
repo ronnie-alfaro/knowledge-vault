@@ -18,6 +18,16 @@ export type Database = {
         Insert: { id?: string; name: string; color?: string; user_id: string };
         Update: { name?: string; color?: string };
       };
+      spaces: {
+        Row: { id: string; user_id: string; name: string; parent_id: string | null; icon: string; color: string; sort_order: number; created_at: string; updated_at: string };
+        Insert: { id?: string; user_id: string; name: string; parent_id?: string | null; icon?: string; color?: string; sort_order?: number; created_at?: string; updated_at?: string };
+        Update: { name?: string; parent_id?: string | null; icon?: string; color?: string; sort_order?: number; updated_at?: string };
+      };
+      note_spaces: {
+        Row: { note_id: string; space_id: string; user_id: string; created_at: string };
+        Insert: { note_id: string; space_id: string; user_id: string; created_at?: string };
+        Update: never;
+      };
       note_tags: {
         Row: { note_id: string; tag_id: string };
         Insert: { note_id: string; tag_id: string };
@@ -64,7 +74,7 @@ export type Database = {
     };
     Functions: {
       search_notes: {
-        Args: { search_query: string; tag_filter?: string | null; include_archived?: boolean };
+        Args: { search_query: string; tag_filter?: string | null; include_archived?: boolean; space_filter?: string | null };
         Returns: Array<{ id: string; title: string; content: string; updated_at: string; favorite: boolean; archived: boolean; rank: number }>;
       };
       get_shared_note: {
@@ -77,6 +87,8 @@ export type Database = {
 
 export type Note = Database["public"]["Tables"]["notes"]["Row"];
 export type Tag = Database["public"]["Tables"]["tags"]["Row"];
+export type Space = Database["public"]["Tables"]["spaces"]["Row"];
+export type NoteSpace = Database["public"]["Tables"]["note_spaces"]["Row"];
 export type KnowledgeNode = Database["public"]["Tables"]["knowledge_nodes"]["Row"];
 export type NodeRelation = Database["public"]["Tables"]["node_relations"]["Row"];
 export type NodeNoteLink = Database["public"]["Tables"]["node_note_links"]["Row"];

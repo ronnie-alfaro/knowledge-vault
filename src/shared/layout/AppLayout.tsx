@@ -6,6 +6,7 @@ import { supabase } from "../lib/supabase";
 import { cn } from "../lib/utils";
 import { useProfile } from "../../features/profile/profileHooks";
 import { PresenceStrip } from "../../features/realtime/PresenceStrip";
+import { SpacesTree } from "../../features/spaces/SpacesTree";
 
 const nav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -51,6 +52,9 @@ export function AppLayout() {
         </nav>
         <div className="hidden px-5 py-4 lg:block">
           <PresenceStrip />
+        </div>
+        <div className="hidden px-3 py-4 lg:block">
+          <SpacesTree />
         </div>
         <div className="hidden border-t border-vault-line p-4 dark:border-zinc-800 lg:block">
           <div className="mb-3 flex items-center gap-3">

@@ -1,13 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../shared/lib/supabase";
 import type { Note } from "../../shared/lib/database.types";
+import { ensureInboxSpace } from "../spaces/spaceHooks";
 
-export function useNotes(params: { query?: string; tagId?: string; archived?: boolean }) {
+export function useNotes(params: { query?: string; tagId?: string; spaceId?: string; archived?: boolean }) {
   return useQuery({
     queryKey: ["notes", params],
     queryFn: async () => {
-      if (params.query || params.tagId) {
-        const { data, error } = await supabase.rpc("search_notes", { search_query: params.query ?? "", tag_filter: params.tagId ?? null, include_archived: params.archived ?? false });
+      if (params.query || params.tagId || params.spaceId) {
+        const { data, error } = await supabase.rpc("search_notes", {
+          search_query: params.query ?? "",
+          tag_filter: params.tagId ?? null,
+          space_filter: params.spaceId ?? null,
+          include_archived: params.archived ?? false
+        });
         if (error) throw error;
         return data;
       }
@@ -39,6 +45,8 @@ export function useCreateNote() {
       if (!userData.user) throw new Error("Not authenticated");
       const { data, error } = await supabase.from("notes").insert({ title: "Untitled note", content: "<p></p>", user_id: userData.user.id }).select().single();
       if (error) throw error;
+      const inbox = await ensureInboxSpace();
+      await supabase.from("note_spaces").insert({ note_id: data.id, space_id: inbox.id, user_id: userData.user.id });
       await supabase.from("activity_events").insert({ user_id: userData.user.id, event_type: "note.created", subject_id: data.id, subject_title: data.title });
       return data;
     },
