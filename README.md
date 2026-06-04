@@ -135,6 +135,8 @@ supabase functions deploy summarize_note
 
 The deployed app reads `/api/config` at runtime. Local Vite development still reads `.env` values named `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and `VITE_APP_URL`.
 
+Deployment trigger note: Cloudflare should rebuild from `main` whenever this README changes.
+
 For local Wrangler testing, copy `.dev.vars.example` to `.dev.vars` and set:
 
 ```bash
