@@ -143,8 +143,11 @@ function KnowledgeGraphCanvas({ nodes, relations, selectedNodeId, onSelectNode }
       <div className="overflow-hidden rounded border border-vault-line bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950">
         <svg className="h-[340px] w-full md:h-[460px]" viewBox="0 0 900 470" role="img" aria-label="Knowledge graph visualization">
           <defs>
-            <marker id="relation-arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
-              <path d="M0,0 L8,4 L0,8 Z" className="fill-zinc-400 dark:fill-zinc-500" />
+            <marker id="relation-arrow" markerHeight="10" markerUnits="strokeWidth" markerWidth="10" orient="auto" refX="9" refY="5" viewBox="0 0 10 10">
+              <path d="M0,0 L10,5 L0,10 Z" fill="#71717a" />
+            </marker>
+            <marker id="relation-arrow-active" markerHeight="10" markerUnits="strokeWidth" markerWidth="10" orient="auto" refX="9" refY="5" viewBox="0 0 10 10">
+              <path d="M0,0 L10,5 L0,10 Z" fill="#0f766e" />
             </marker>
           </defs>
           {visibleRelations.map((relation) => {
@@ -152,11 +155,29 @@ function KnowledgeGraphCanvas({ nodes, relations, selectedNodeId, onSelectNode }
             const target = positions.get(relation.target_node_id);
             if (!source || !target) return null;
             const isActive = selectedRelations.has(relation.id);
+            const sourceRadius = Math.min(34, 22 + (degreeByNode.get(relation.source_node_id) ?? 0) * 3);
+            const targetRadius = Math.min(34, 22 + (degreeByNode.get(relation.target_node_id) ?? 0) * 3);
+            const dx = target.x - source.x;
+            const dy = target.y - source.y;
+            const distance = Math.hypot(dx, dy) || 1;
+            const startX = source.x + (dx / distance) * (sourceRadius + 4);
+            const startY = source.y + (dy / distance) * (sourceRadius + 4);
+            const endX = target.x - (dx / distance) * (targetRadius + 9);
+            const endY = target.y - (dy / distance) * (targetRadius + 9);
             const midX = (source.x + target.x) / 2;
             const midY = (source.y + target.y) / 2;
             return (
               <g key={relation.id} className={isActive ? "opacity-100" : "opacity-45"}>
-                <line x1={source.x} y1={source.y} x2={target.x} y2={target.y} markerEnd="url(#relation-arrow)" className={isActive ? "stroke-vault-accent" : "stroke-zinc-400 dark:stroke-zinc-600"} strokeWidth={isActive ? 2.6 : 1.5} />
+                <line
+                  x1={startX}
+                  y1={startY}
+                  x2={endX}
+                  y2={endY}
+                  markerEnd={isActive ? "url(#relation-arrow-active)" : "url(#relation-arrow)"}
+                  className={isActive ? "stroke-vault-accent" : "stroke-zinc-500 dark:stroke-zinc-500"}
+                  strokeLinecap="round"
+                  strokeWidth={isActive ? 2.6 : 1.8}
+                />
                 <text x={midX} y={midY - 6} textAnchor="middle" className="fill-zinc-500 text-[11px] dark:fill-zinc-400">{relation.relation_type}</text>
               </g>
             );
