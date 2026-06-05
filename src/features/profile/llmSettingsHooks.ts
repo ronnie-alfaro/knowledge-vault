@@ -1,6 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { env } from "../../shared/lib/env";
 import { supabase } from "../../shared/lib/supabase";
 import type { LlmProvider } from "../../shared/lib/database.types";
+
+type LlmCheckResult = {
+  online: boolean;
+  status: string;
+  message: string;
+  provider?: LlmProvider;
+  model?: string;
+};
 
 export type LlmSettings = {
   provider: LlmProvider;
@@ -48,4 +57,38 @@ export function useClearLlmApiKey() {
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["llm-settings"] })
   });
+}
+
+export function useCheckLlmConfig() {
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("Sign in again before checking LLM config.");
+
+      const response = await fetch(`${env.VITE_SUPABASE_URL}/functions/v1/check_llm_config`, {
+        method: "POST",
+        headers: {
+          apikey: env.VITE_SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({})
+      });
+
+      const payload = await parseResponse(response);
+      if (!response.ok) throw new Error(payload.message ?? "Check LLM Config");
+      return payload;
+    }
+  });
+}
+
+async function parseResponse(response: Response): Promise<LlmCheckResult> {
+  const text = await response.text();
+  if (!text) return { online: false, status: "offline", message: "" };
+  try {
+    return JSON.parse(text) as LlmCheckResult;
+  } catch {
+    return { online: false, status: "offline", message: text };
+  }
 }

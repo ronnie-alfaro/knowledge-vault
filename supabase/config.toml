@@ -36,3 +36,6 @@ enabled = true
 
 [functions.semantic_embeddings]
 verify_jwt = false
+
+[functions.check_llm_config]
+verify_jwt = false

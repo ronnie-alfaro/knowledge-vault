@@ -3,7 +3,7 @@ import { Button } from "../../shared/components/Button";
 import type { LlmProvider } from "../../shared/lib/database.types";
 import { getErrorMessage } from "../../shared/lib/errors";
 import { supabase } from "../../shared/lib/supabase";
-import { useClearLlmApiKey, useLlmSettings, useSaveLlmSettings } from "./llmSettingsHooks";
+import { useCheckLlmConfig, useClearLlmApiKey, useLlmSettings, useSaveLlmSettings } from "./llmSettingsHooks";
 import { useProfile, useUpdateProfile } from "./profileHooks";
 
 const providerOptions: Array<{ value: LlmProvider; label: string; placeholder: string }> = [
@@ -18,6 +18,7 @@ export function ProfilePage() {
   const updateProfile = useUpdateProfile();
   const saveLlmSettings = useSaveLlmSettings();
   const clearLlmKey = useClearLlmApiKey();
+  const checkLlmConfig = useCheckLlmConfig();
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -80,9 +81,21 @@ export function ProfilePage() {
     try {
       await saveLlmSettings.mutateAsync({ provider, model, apiKey });
       setApiKey("");
-      setLlmStatusMessage("LLM settings saved");
+      const check = await checkLlmConfig.mutateAsync();
+      setLlmStatusMessage(check.online ? `LLM Online (${check.provider}, ${check.model})` : "Check LLM Config");
     } catch (error) {
       setLlmError(getErrorMessage(error, "Could not save LLM settings."));
+    }
+  }
+
+  async function checkAiSettings() {
+    setLlmStatusMessage("");
+    setLlmError("");
+    try {
+      const check = await checkLlmConfig.mutateAsync();
+      setLlmStatusMessage(check.online ? `LLM Online (${check.provider}, ${check.model})` : "Check LLM Config");
+    } catch (error) {
+      setLlmError(getErrorMessage(error, "Check LLM Config"));
     }
   }
 
@@ -151,6 +164,7 @@ export function ProfilePage() {
         {llmError ? <p className="text-sm text-red-600">{llmError}</p> : null}
         <div className="flex flex-wrap items-center gap-3">
           <Button disabled={saveLlmSettings.isPending}>{saveLlmSettings.isPending ? "Saving..." : "Save LLM settings"}</Button>
+          <Button type="button" variant="secondary" disabled={checkLlmConfig.isPending || (!llmSettings?.has_api_key && !apiKey.trim())} onClick={() => void checkAiSettings()}>{checkLlmConfig.isPending ? "Checking..." : "Check LLM Config"}</Button>
           <Button type="button" variant="secondary" disabled={!llmSettings?.has_api_key || clearLlmKey.isPending} onClick={() => void clearAiKey()}>Remove key</Button>
           {llmStatusMessage ? <span className="text-sm font-medium text-vault-accent">{llmStatusMessage}</span> : null}
         </div>
