@@ -1,16 +1,17 @@
 import { env } from "../../shared/lib/env";
 import { supabase } from "../../shared/lib/supabase";
 
-export type WhisperResult = {
+export type WhisperSuggestion = {
+  id: string;
   title: string;
   content: string;
   summary: string;
+  reason: string;
   tags: string[];
-  concepts: Array<{ title: string; type: string; description: string }>;
-  relations: Array<{ title: string; relation_type: string; reason: string }>;
+  sources: string[];
 };
 
-export async function processWhisper(whisper: string) {
+export async function generateWhisperSuggestions() {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   if (!token) throw new Error("Sign in again before using Whisper Notes.");
@@ -22,19 +23,19 @@ export async function processWhisper(whisper: string) {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ whisper })
+    body: JSON.stringify({})
   });
 
   const payload = await parseResponse(response);
-  if (!response.ok) throw new Error(payload.error ?? "Could not process whisper.");
-  return payload as WhisperResult;
+  if (!response.ok) throw new Error(payload.error ?? "Could not generate whispers.");
+  return payload.suggestions ?? [];
 }
 
 async function parseResponse(response: Response) {
   const text = await response.text();
   if (!text) return {};
   try {
-    return JSON.parse(text) as Partial<WhisperResult> & { error?: string };
+    return JSON.parse(text) as { suggestions?: WhisperSuggestion[]; error?: string };
   } catch {
     return { error: text };
   }

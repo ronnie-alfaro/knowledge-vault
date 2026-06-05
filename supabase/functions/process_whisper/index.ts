@@ -14,8 +14,8 @@ type WhisperResult = {
   content: string;
   summary: string;
   tags: string[];
-  concepts: Array<{ title: string; type: string; description: string }>;
-  relations: Array<{ title: string; reason: string; relation_type: string }>;
+  reason: string;
+  sources: string[];
 };
 
 serve(async (req) => {
@@ -31,10 +31,6 @@ serve(async (req) => {
     const { data: userData, error: userError } = await userClient.auth.getUser();
     if (userError || !userData.user) throw userError ?? new Error("Not authenticated");
 
-    const { whisper } = await req.json() as { whisper?: string };
-    const rawThought = whisper?.trim();
-    if (!rawThought) throw new Error("Whisper text is required");
-
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!serviceKey) throw new Error("SUPABASE_SERVICE_ROLE_KEY is not configured");
     const serviceClient = createClient(Deno.env.get("SUPABASE_URL")!, serviceKey);
@@ -44,34 +40,96 @@ serve(async (req) => {
     const config = (data?.[0] ?? null) as RuntimeConfig | null;
     if (!config?.api_key) return json({ error: "Configure an LLM provider before using Whisper Notes." }, 400);
 
-    const result = await processWhisper(config, rawThought);
-    return json(result);
+    const context = await loadVaultContext(serviceClient, userData.user.id);
+    if (context.notes.length < 2) return json({ error: "Create at least two notes before generating Whisper Notes." }, 400);
+
+    const suggestions = await generateWhisperSuggestions(config, context);
+    return json({ suggestions });
   } catch (error) {
     return json({ error: error instanceof Error ? error.message : "Unexpected error" }, 400);
   }
 });
 
-async function processWhisper(config: RuntimeConfig, whisper: string) {
-  const prompt = buildPrompt(whisper);
-  const text = await complete(config, prompt);
-  return normalizeResult(parseJson(text), whisper);
+async function loadVaultContext(supabase: ReturnType<typeof createClient>, userId: string) {
+  const { data: notes, error: notesError } = await supabase
+    .from("notes")
+    .select("id,title,content,updated_at,favorite")
+    .eq("user_id", userId)
+    .eq("archived", false)
+    .order("updated_at", { ascending: false })
+    .limit(30);
+  if (notesError) throw notesError;
+
+  const { data: nodes, error: nodesError } = await supabase
+    .from("knowledge_nodes")
+    .select("id,title,type,description")
+    .eq("user_id", userId)
+    .order("updated_at", { ascending: false })
+    .limit(30);
+  if (nodesError) throw nodesError;
+
+  const { data: relations, error: relationsError } = await supabase
+    .from("node_relations")
+    .select("relation_type,description,source_node_id,target_node_id")
+    .eq("user_id", userId)
+    .limit(40);
+  if (relationsError) throw relationsError;
+
+  const nodeTitles = new Map((nodes ?? []).map((node) => [node.id, node.title]));
+
+  return {
+    notes: (notes ?? []).map((note) => ({
+      title: note.title,
+      preview: stripHtml(note.content).slice(0, 900),
+      updated_at: note.updated_at,
+      favorite: note.favorite
+    })),
+    nodes: (nodes ?? []).map((node) => ({ title: node.title, type: node.type, description: node.description })),
+    relations: (relations ?? []).map((relation) => ({
+      source: nodeTitles.get(relation.source_node_id) ?? relation.source_node_id,
+      target: nodeTitles.get(relation.target_node_id) ?? relation.target_node_id,
+      relation_type: relation.relation_type,
+      description: relation.description
+    }))
+  };
 }
 
-function buildPrompt(whisper: string) {
+async function generateWhisperSuggestions(config: RuntimeConfig, context: Awaited<ReturnType<typeof loadVaultContext>>) {
+  const prompt = buildPrompt(context);
+  const text = await complete(config, prompt);
+  return normalizeSuggestions(parseJson(text));
+}
+
+function buildPrompt(context: Awaited<ReturnType<typeof loadVaultContext>>) {
   return `You are Knowledge Vault's Whisper Notes processor.
-Turn a raw captured thought into a useful personal knowledge note.
+The user wants "Whisper Notes": short, useful note ideas that emerge from patterns, gaps, and connections inside their existing vault.
+
+Analyze the user's recent notes, knowledge nodes, and graph relations.
+Suggest 4 to 6 possible new notes the user may want to create.
+Each suggestion should feel specific to the vault, not generic.
+
 Return only valid JSON with this shape:
 {
-  "title": "short useful title",
-  "content": "clean note body in simple HTML using p, ul, li, strong only",
-  "summary": "one sentence summary",
-  "tags": ["short-tag"],
-  "concepts": [{"title":"Concept name","type":"concept|idea|question|project|person|book|article|place|event","description":"short description"}],
-  "relations": [{"title":"possible related note or concept","relation_type":"related_to|supports|contradicts|expands|asks|answers","reason":"why it may connect"}]
+  "suggestions": [
+    {
+      "title": "note title",
+      "summary": "why this note is worth creating",
+      "reason": "which existing notes/concepts made this suggestion appear",
+      "content": "starter note body in simple HTML using p, ul, li, strong only",
+      "tags": ["short-tag"],
+      "sources": ["existing note or concept title"]
+    }
+  ]
 }
 
-Raw whisper:
-${whisper}`;
+Recent notes:
+${JSON.stringify(context.notes)}
+
+Knowledge nodes:
+${JSON.stringify(context.nodes)}
+
+Graph relations:
+${JSON.stringify(context.relations)}`;
 }
 
 async function complete(config: RuntimeConfig, prompt: string) {
@@ -138,23 +196,17 @@ function parseJson(text: string) {
   }
 }
 
-function normalizeResult(value: Partial<WhisperResult>, fallback: string): WhisperResult {
-  return {
-    title: stringOr(value.title, "Untitled whisper").slice(0, 120),
-    content: sanitizeHtml(stringOr(value.content, `<p>${escapeHtml(fallback)}</p>`)),
-    summary: stringOr(value.summary, "").slice(0, 280),
-    tags: arrayOfStrings(value.tags).slice(0, 8),
-    concepts: Array.isArray(value.concepts) ? value.concepts.slice(0, 6).map((concept) => ({
-      title: stringOr(concept?.title, "Untitled concept").slice(0, 80),
-      type: stringOr(concept?.type, "concept").slice(0, 32),
-      description: stringOr(concept?.description, "").slice(0, 220)
-    })) : [],
-    relations: Array.isArray(value.relations) ? value.relations.slice(0, 6).map((relation) => ({
-      title: stringOr(relation?.title, "Related idea").slice(0, 100),
-      relation_type: stringOr(relation?.relation_type, "related_to").slice(0, 32),
-      reason: stringOr(relation?.reason, "").slice(0, 220)
-    })) : []
-  };
+function normalizeSuggestions(value: { suggestions?: Array<Partial<WhisperResult>> }) {
+  const suggestions = Array.isArray(value.suggestions) ? value.suggestions : [];
+  return suggestions.slice(0, 8).map((suggestion, index) => ({
+    id: `${Date.now()}-${index}`,
+    title: stringOr(suggestion.title, "Untitled whisper").slice(0, 120),
+    content: sanitizeHtml(stringOr(suggestion.content, "<p>Start this note from the suggested connection.</p>")),
+    summary: stringOr(suggestion.summary, "").slice(0, 280),
+    reason: stringOr(suggestion.reason, "").slice(0, 360),
+    tags: arrayOfStrings(suggestion.tags).slice(0, 8),
+    sources: arrayOfStrings(suggestion.sources).slice(0, 6)
+  }));
 }
 
 function arrayOfStrings(value: unknown) {
@@ -172,8 +224,8 @@ function sanitizeHtml(html: string) {
     .replace(/javascript:/gi, "");
 }
 
-function escapeHtml(value: string) {
-  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+function stripHtml(value: string) {
+  return value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
 async function assertOk(response: Response, provider: string) {

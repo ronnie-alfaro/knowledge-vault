@@ -1,8 +1,8 @@
 import { useMutation } from "@tanstack/react-query";
-import { processWhisper } from "./whisperServices";
+import { generateWhisperSuggestions } from "./whisperServices";
 
-export function useProcessWhisper() {
+export function useGenerateWhisperSuggestions() {
   return useMutation({
-    mutationFn: processWhisper
+    mutationFn: generateWhisperSuggestions
   });
 }
