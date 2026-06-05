@@ -79,7 +79,7 @@ async function checkOpenAI(apiKey: string, model: string) {
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model, input: "Reply with ok.", max_output_tokens: 8 })
+    body: JSON.stringify({ model, input: "Reply with ok.", max_output_tokens: 16 })
   });
   await assertOk(response, "OpenAI");
   return { model };
