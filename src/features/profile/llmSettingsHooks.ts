@@ -11,6 +11,12 @@ type LlmCheckResult = {
   model?: string;
 };
 
+export type LlmModel = {
+  id: string;
+  label: string;
+  description?: string;
+};
+
 export type LlmSettings = {
   provider: LlmProvider;
   model: string | null;
@@ -73,11 +79,35 @@ export function useCheckLlmConfig() {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({})
+        body: JSON.stringify({ action: "check" })
       });
 
       const payload = await parseResponse(response);
       if (!response.ok) throw new Error(payload.message ?? "Check LLM Config");
+      return payload;
+    }
+  });
+}
+
+export function useLlmModels() {
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("Sign in again before loading models.");
+
+      const response = await fetch(`${env.VITE_SUPABASE_URL}/functions/v1/check_llm_config`, {
+        method: "POST",
+        headers: {
+          apikey: env.VITE_SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ action: "listModels" })
+      });
+
+      const payload = await parseModelsResponse(response);
+      if (!response.ok) throw new Error(payload.message ?? "Could not load models.");
       return payload;
     }
   });
@@ -90,5 +120,15 @@ async function parseResponse(response: Response): Promise<LlmCheckResult> {
     return JSON.parse(text) as LlmCheckResult;
   } catch {
     return { online: false, status: "offline", message: text };
+  }
+}
+
+async function parseModelsResponse(response: Response): Promise<{ provider?: LlmProvider; models: LlmModel[]; message?: string }> {
+  const text = await response.text();
+  if (!text) return { models: [] };
+  try {
+    return JSON.parse(text) as { provider?: LlmProvider; models: LlmModel[]; message?: string };
+  } catch {
+    return { models: [], message: text };
   }
 }

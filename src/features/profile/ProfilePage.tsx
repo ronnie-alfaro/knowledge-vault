@@ -3,7 +3,7 @@ import { Button } from "../../shared/components/Button";
 import type { LlmProvider } from "../../shared/lib/database.types";
 import { getErrorMessage } from "../../shared/lib/errors";
 import { supabase } from "../../shared/lib/supabase";
-import { useCheckLlmConfig, useClearLlmApiKey, useLlmSettings, useSaveLlmSettings } from "./llmSettingsHooks";
+import { useCheckLlmConfig, useClearLlmApiKey, useLlmModels, useLlmSettings, useSaveLlmSettings } from "./llmSettingsHooks";
 import { useProfile, useUpdateProfile } from "./profileHooks";
 
 const providerOptions: Array<{ value: LlmProvider; label: string; placeholder: string }> = [
@@ -19,6 +19,7 @@ export function ProfilePage() {
   const saveLlmSettings = useSaveLlmSettings();
   const clearLlmKey = useClearLlmApiKey();
   const checkLlmConfig = useCheckLlmConfig();
+  const llmModels = useLlmModels();
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -28,6 +29,7 @@ export function ProfilePage() {
   const [apiKey, setApiKey] = useState("");
   const [llmStatusMessage, setLlmStatusMessage] = useState("");
   const [llmError, setLlmError] = useState("");
+  const [availableModels, setAvailableModels] = useState<Array<{ id: string; label: string; description?: string }>>([]);
 
   useEffect(() => {
     if (profile) {
@@ -99,6 +101,19 @@ export function ProfilePage() {
     }
   }
 
+  async function loadModels() {
+    setLlmStatusMessage("");
+    setLlmError("");
+    try {
+      const result = await llmModels.mutateAsync();
+      setAvailableModels(result.models);
+      setLlmStatusMessage(result.models.length > 0 ? `${result.models.length} models available` : "No compatible models returned");
+    } catch (error) {
+      setAvailableModels([]);
+      setLlmError(getErrorMessage(error, "Could not load models."));
+    }
+  }
+
   async function clearAiKey() {
     setLlmStatusMessage("");
     setLlmError("");
@@ -135,7 +150,7 @@ export function ProfilePage() {
         </div>
         <label className="block text-sm font-medium">
           Provider
-          <select className="mt-1 w-full rounded border border-vault-line bg-transparent px-3 py-2 dark:border-zinc-700" value={provider} onChange={(event) => setProvider(event.target.value as LlmProvider)}>
+          <select className="mt-1 w-full rounded border border-vault-line bg-transparent px-3 py-2 dark:border-zinc-700" value={provider} onChange={(event) => { setProvider(event.target.value as LlmProvider); setAvailableModels([]); }}>
             {providerOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
         </label>
@@ -148,6 +163,15 @@ export function ProfilePage() {
             placeholder={providerOptions.find((option) => option.value === provider)?.placeholder}
           />
         </label>
+        {availableModels.length > 0 ? (
+          <label className="block text-sm font-medium">
+            Available models
+            <select className="mt-1 w-full rounded border border-vault-line bg-transparent px-3 py-2 dark:border-zinc-700" value={model} onChange={(event) => setModel(event.target.value)}>
+              <option value="">Select a model</option>
+              {availableModels.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+            </select>
+          </label>
+        ) : null}
         <label className="block text-sm font-medium">
           API key
           <input
@@ -164,6 +188,7 @@ export function ProfilePage() {
         {llmError ? <p className="text-sm text-red-600">{llmError}</p> : null}
         <div className="flex flex-wrap items-center gap-3">
           <Button disabled={saveLlmSettings.isPending}>{saveLlmSettings.isPending ? "Saving..." : "Save LLM settings"}</Button>
+          <Button type="button" variant="secondary" disabled={llmModels.isPending || !llmSettings?.has_api_key} onClick={() => void loadModels()}>{llmModels.isPending ? "Loading..." : "Load models"}</Button>
           <Button type="button" variant="secondary" disabled={checkLlmConfig.isPending || (!llmSettings?.has_api_key && !apiKey.trim())} onClick={() => void checkAiSettings()}>{checkLlmConfig.isPending ? "Checking..." : "Check LLM Config"}</Button>
           <Button type="button" variant="secondary" disabled={!llmSettings?.has_api_key || clearLlmKey.isPending} onClick={() => void clearAiKey()}>Remove key</Button>
           {llmStatusMessage ? <span className="text-sm font-medium text-vault-accent">{llmStatusMessage}</span> : null}

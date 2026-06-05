@@ -9,6 +9,16 @@ type RuntimeConfig = {
   api_key: string;
 };
 
+type RequestBody = {
+  action?: "check" | "listModels";
+};
+
+type LlmModel = {
+  id: string;
+  label: string;
+  description?: string;
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -32,12 +42,25 @@ serve(async (req) => {
     const config = (data?.[0] ?? null) as RuntimeConfig | null;
     if (!config?.api_key) return json({ online: false, status: "missing_key", message: "Check LLM Config: API key is missing." }, 400);
 
+    const body = await readBody(req);
+    if (body.action === "listModels") {
+      return json({ provider: config.provider, models: await listProviderModels(config) });
+    }
+
     const result = await checkProvider(config);
     return json({ online: true, status: "online", message: "LLM Online", provider: config.provider, model: result.model });
   } catch (error) {
     return json({ online: false, status: "offline", message: `Check LLM Config: ${error instanceof Error ? error.message : "Unexpected error"}` }, 400);
   }
 });
+
+async function readBody(req: Request): Promise<RequestBody> {
+  try {
+    return await req.json() as RequestBody;
+  } catch {
+    return {};
+  }
+}
 
 async function checkProvider(config: RuntimeConfig) {
   switch (config.provider) {
@@ -73,13 +96,67 @@ async function checkAnthropic(apiKey: string, model: string) {
 }
 
 async function checkGemini(apiKey: string, model: string) {
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+  const modelPath = model.startsWith("models/") ? model : `models/${model}`;
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${modelPath}:generateContent?key=${encodeURIComponent(apiKey)}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ contents: [{ parts: [{ text: "Reply with ok." }] }], generationConfig: { maxOutputTokens: 8 } })
   });
   await assertOk(response, "Gemini");
   return { model };
+}
+
+async function listProviderModels(config: RuntimeConfig): Promise<LlmModel[]> {
+  switch (config.provider) {
+    case "openai":
+      return listOpenAIModels(config.api_key);
+    case "anthropic":
+      return listAnthropicModels(config.api_key);
+    case "gemini":
+      return listGeminiModels(config.api_key);
+    default:
+      throw new Error("Unsupported provider");
+  }
+}
+
+async function listOpenAIModels(apiKey: string) {
+  const response = await fetch("https://api.openai.com/v1/models", {
+    headers: { Authorization: `Bearer ${apiKey}` }
+  });
+  await assertOk(response, "OpenAI models");
+  const data = await response.json() as { data: Array<{ id: string }> };
+  return data.data
+    .map((model) => model.id)
+    .filter((id) => /^(gpt-|o\d|chatgpt-)/.test(id))
+    .sort()
+    .map((id) => ({ id, label: id }));
+}
+
+async function listAnthropicModels(apiKey: string) {
+  const response = await fetch("https://api.anthropic.com/v1/models", {
+    headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01" }
+  });
+  await assertOk(response, "Anthropic models");
+  const data = await response.json() as { data?: Array<{ id: string; display_name?: string }> };
+  return (data.data ?? [])
+    .map((model) => ({ id: model.id, label: model.display_name ?? model.id }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
+
+async function listGeminiModels(apiKey: string) {
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`);
+  await assertOk(response, "Gemini models");
+  const data = await response.json() as {
+    models?: Array<{ name: string; displayName?: string; description?: string; supportedGenerationMethods?: string[] }>;
+  };
+  return (data.models ?? [])
+    .filter((model) => model.supportedGenerationMethods?.includes("generateContent"))
+    .map((model) => ({
+      id: model.name,
+      label: model.displayName ? `${model.displayName} (${model.name})` : model.name,
+      description: model.description
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label));
 }
 
 async function assertOk(response: Response, provider: string) {
