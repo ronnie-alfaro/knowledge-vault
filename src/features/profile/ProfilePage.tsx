@@ -45,21 +45,32 @@ export function ProfilePage() {
 
   async function uploadAvatar(file: File) {
     setStatusMessage("");
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) return;
-    const path = `${userData.user.id}/avatar-${Date.now()}-${file.name}`;
-    const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
-    if (error) throw error;
-    const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-    setAvatarUrl(data.publicUrl);
-    setStatusMessage("Avatar ready. Save profile to keep it.");
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+      const path = `${userData.user.id}/avatar-${Date.now()}-${file.name}`;
+      const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+      if (error) throw error;
+      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+      setAvatarUrl(data.publicUrl);
+      setStatusMessage("Avatar ready. Save profile to keep it.");
+    } catch (error) {
+      setStatusMessage(getErrorMessage(error, "Could not upload avatar."));
+    }
   }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     setStatusMessage("");
-    await updateProfile.mutateAsync({ display_name: displayName, bio, avatar_url: avatarUrl });
-    setStatusMessage("Profile saved");
+    try {
+      const savedProfile = await updateProfile.mutateAsync({ display_name: displayName, bio, avatar_url: avatarUrl });
+      setDisplayName(savedProfile.display_name ?? "");
+      setBio(savedProfile.bio ?? "");
+      setAvatarUrl(savedProfile.avatar_url);
+      setStatusMessage("Profile saved");
+    } catch (error) {
+      setStatusMessage(getErrorMessage(error, "Could not save profile."));
+    }
   }
 
   async function saveAiSettings(event: FormEvent) {

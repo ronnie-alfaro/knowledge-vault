@@ -21,6 +21,8 @@ export function AppLayout() {
   const navigate = useNavigate();
   const { data: profile } = useProfile();
   const [dark, setDark] = useState(() => localStorage.getItem("theme") === "dark");
+  const userName = profile?.display_name?.trim() || profile?.email?.split("@")[0] || "Vault user";
+  const avatarSeed = encodeURIComponent(userName || profile?.email || "KV");
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
@@ -59,9 +61,9 @@ export function AppLayout() {
         </div>
         <div className="hidden border-t border-vault-line p-4 dark:border-zinc-800 lg:block">
           <div className="mb-3 flex items-center gap-3">
-            <img className="h-9 w-9 rounded object-cover" src={profile?.avatar_url || `https://api.dicebear.com/9.x/initials/svg?seed=${profile?.email ?? "KV"}`} alt="" />
+            <img className="h-9 w-9 rounded object-cover" src={profile?.avatar_url || `https://api.dicebear.com/9.x/initials/svg?seed=${avatarSeed}`} alt="" />
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium">{profile?.display_name || "Vault user"}</p>
+              <p className="truncate text-sm font-medium">{userName}</p>
               <p className="truncate text-xs text-zinc-500">{profile?.email}</p>
             </div>
           </div>
