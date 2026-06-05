@@ -13,6 +13,7 @@ import { KnowledgeGraphPage } from "./features/knowledge/KnowledgeGraphPage";
 import { KnowledgeInsightsPage } from "./features/semantic/KnowledgeInsightsPage";
 import { ProfilePage } from "./features/profile/ProfilePage";
 import { SharedNotePage } from "./features/sharing/SharedNotePage";
+import { WhisperNotesPage } from "./features/whispers/WhisperNotesPage";
 import { ErrorBoundary } from "./shared/components/ErrorBoundary";
 
 export const router = createBrowserRouter([
@@ -34,6 +35,7 @@ export const router = createBrowserRouter([
           { path: "/notes/:noteId", element: <NoteDetailPage /> },
           { path: "/knowledge", element: <KnowledgeGraphPage /> },
           { path: "/insights", element: <KnowledgeInsightsPage /> },
+          { path: "/whispers", element: <WhisperNotesPage /> },
           { path: "/files", element: <FilesPage /> },
           { path: "/profile", element: <ProfilePage /> }
         ]

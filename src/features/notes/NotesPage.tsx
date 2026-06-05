@@ -24,7 +24,7 @@ export function NotesPage() {
   const activeSpace = spaces.find((space) => space.id === spaceId);
 
   async function create() {
-    const note = await createNote.mutateAsync();
+    const note = await createNote.mutateAsync(undefined);
     navigate(`/notes/${note.id}`);
   }
 

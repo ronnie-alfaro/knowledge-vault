@@ -41,10 +41,12 @@ export function useNote(noteId?: string) {
 export function useCreateNote() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async (input?: { title?: string; content?: string }) => {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error("Not authenticated");
-      const { data, error } = await supabase.from("notes").insert({ title: "Untitled note", content: "<p></p>", user_id: userData.user.id }).select().single();
+      const title = input?.title?.trim() || "Untitled note";
+      const content = input?.content?.trim() || "<p></p>";
+      const { data, error } = await supabase.from("notes").insert({ title, content, user_id: userData.user.id }).select().single();
       if (error) throw error;
       const inbox = await ensureInboxSpace();
       await supabase.from("note_spaces").insert({ note_id: data.id, space_id: inbox.id, user_id: userData.user.id });
