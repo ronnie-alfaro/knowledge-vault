@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { EmptyState } from "../../shared/components/EmptyState";
 import { supabase } from "../../shared/lib/supabase";
 import { formatBytes } from "../../shared/lib/utils";
+import { uploadAttachment } from "./attachmentServices";
 
 export function FilesPage() {
   const queryClient = useQueryClient();
@@ -15,15 +16,7 @@ export function FilesPage() {
     }
   });
   const upload = useMutation({
-    mutationFn: async (file: File) => {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) throw new Error("Not authenticated");
-      const path = `${userData.user.id}/${crypto.randomUUID()}-${file.name}`;
-      const { error: storageError } = await supabase.storage.from("attachments").upload(path, file);
-      if (storageError) throw storageError;
-      const { error } = await supabase.from("attachments").insert({ file_name: file.name, storage_path: path, file_size: file.size, mime_type: file.type, uploaded_by: userData.user.id });
-      if (error) throw error;
-    },
+    mutationFn: uploadAttachment,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["attachments"] })
   });
 

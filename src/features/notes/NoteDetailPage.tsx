@@ -6,6 +6,7 @@ import { Button } from "../../shared/components/Button";
 import { env } from "../../shared/lib/env";
 import { supabase } from "../../shared/lib/supabase";
 import { stripHtml } from "../../shared/lib/utils";
+import { resolvePrivateImageUrls } from "../files/attachmentServices";
 import { useAssignTag, useCreateTag, useRemoveTag, useTags } from "../tags/tagHooks";
 import { NoteKnowledgeNodes } from "../knowledge/NoteKnowledgeNodes";
 import { NoteSpaces } from "../spaces/NoteSpaces";
@@ -30,10 +31,14 @@ export function NoteDetailPage() {
   const assigned = useMemo(() => new Set(note?.note_tags?.map((row: { tag_id: string }) => row.tag_id) ?? []), [note]);
 
   useEffect(() => {
+    let isActive = true;
     if (note) {
       setTitle(note.title);
-      setContent(note.content);
+      void resolvePrivateImageUrls(note.content).then((resolvedContent) => {
+        if (isActive) setContent(resolvedContent);
+      });
     }
+    return () => { isActive = false; };
   }, [note]);
 
   useEffect(() => {
@@ -42,7 +47,7 @@ export function NoteDetailPage() {
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "notes", filter: `id=eq.${noteId}` }, (payload) => {
         const next = payload.new as { title: string; content: string };
         setTitle(next.title);
-        setContent(next.content);
+        void resolvePrivateImageUrls(next.content).then(setContent);
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };

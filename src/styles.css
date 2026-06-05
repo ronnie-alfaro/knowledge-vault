@@ -14,3 +14,5 @@ a { @apply text-inherit; }
 .editor-content ul { @apply list-disc pl-6; }
 .editor-content ol { @apply list-decimal pl-6; }
 .editor-content a { @apply text-vault-accent underline; }
+.editor-content img { @apply my-4 max-h-[520px] w-auto max-w-full rounded border border-vault-line object-contain dark:border-zinc-800; }
+.editor-content .ProseMirror-selectednode { @apply outline outline-2 outline-vault-accent; }
