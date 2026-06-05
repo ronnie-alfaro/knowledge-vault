@@ -16,7 +16,7 @@ export function useSuggestedConnections(threshold: number) {
 export function useSemanticSearch(query: string) {
   return useQuery({
     queryKey: ["semantic-search", query],
-    enabled: query.trim().length > 2,
-    queryFn: () => semanticSearch(query)
+    enabled: query.trim().length > 0,
+    queryFn: () => semanticSearch(query.trim())
   });
 }

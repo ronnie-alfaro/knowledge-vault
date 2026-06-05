@@ -1,14 +1,28 @@
 import { Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
+import type { FormEvent } from "react";
 import { Button } from "../../shared/components/Button";
 import { useSemanticSearch, useSuggestedConnections } from "./semanticHooks";
 
 export function KnowledgeInsightsPage() {
   const [query, setQuery] = useState("");
+  const [submittedQuery, setSubmittedQuery] = useState("");
   const [threshold, setThreshold] = useState(0.85);
-  const search = useSemanticSearch(query);
+  const search = useSemanticSearch(submittedQuery);
   const suggestions = useSuggestedConnections(threshold);
+  const canSearch = query.trim().length > 0;
+
+  function handleSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const nextQuery = query.trim();
+    if (!nextQuery) return;
+    if (nextQuery === submittedQuery) {
+      void search.refetch();
+      return;
+    }
+    setSubmittedQuery(nextQuery);
+  }
 
   return (
     <section>
@@ -18,16 +32,17 @@ export function KnowledgeInsightsPage() {
       </div>
       <section className="mt-6 rounded border border-vault-line bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
         <h2 className="font-semibold">Semantic Search</h2>
-        <div className="mt-3 flex gap-2">
+        <form className="mt-3 flex gap-2" onSubmit={handleSearch}>
           <input
             className="min-w-0 flex-1 rounded border border-vault-line bg-transparent px-3 py-2 dark:border-zinc-700"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="gods associated with wisdom"
           />
-          <Button variant="secondary" disabled={search.isFetching}><Search size={16} /> Search</Button>
-        </div>
+          <Button type="submit" variant="secondary" disabled={!canSearch || search.isFetching}><Search size={16} /> Search</Button>
+        </form>
         {search.error ? <p className="mt-3 text-sm text-red-600">{search.error.message}</p> : null}
+        {search.isFetching ? <p className="mt-3 text-sm text-zinc-500">Searching semantic memory...</p> : null}
         <div className="mt-4 grid gap-2 md:grid-cols-2">
           {search.data?.map((result) => (
             <Link key={`${result.source_type}-${result.source_id}`} to={result.source_type === "note" ? `/notes/${result.source_id}` : "/knowledge"} className="rounded border border-vault-line p-3 text-sm hover:bg-black/5 dark:border-zinc-800 dark:hover:bg-white/10">
@@ -40,6 +55,9 @@ export function KnowledgeInsightsPage() {
             </Link>
           ))}
         </div>
+        {!search.isFetching && submittedQuery && search.data?.length === 0 ? (
+          <p className="mt-4 text-sm text-zinc-500">No semantic matches yet. Edit and save a few notes or knowledge nodes so embeddings can be generated.</p>
+        ) : null}
       </section>
       <section className="mt-6 rounded border border-vault-line bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
