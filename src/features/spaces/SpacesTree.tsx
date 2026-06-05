@@ -2,6 +2,7 @@ import { ChevronRight, Folder, Inbox, Plus } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "../../shared/components/Button";
+import { getErrorMessage } from "../../shared/lib/errors";
 import { cn } from "../../shared/lib/utils";
 import type { Space } from "../../shared/lib/database.types";
 import { useCreateSpace, useSpaces } from "./spaceHooks";
@@ -25,7 +26,7 @@ export function SpacesTree() {
       await createSpace.mutateAsync({ name });
       setName("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create space.");
+      setError(getErrorMessage(err, "Could not create space."));
     }
   }
 

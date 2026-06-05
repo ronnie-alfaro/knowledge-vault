@@ -37,14 +37,15 @@ export async function ensureInboxSpace() {
 }
 
 export async function createSpace(input: { name: string; parent_id?: string | null; color?: string; icon?: string }) {
-  const userId = await requireUserId();
+  await requireUserId();
   const name = input.name.trim();
   if (!name) throw new Error("Space name is required");
-  const { data, error } = await supabase
-    .from("spaces")
-    .insert({ user_id: userId, name, parent_id: input.parent_id ?? null, color: input.color ?? "#0f766e", icon: input.icon ?? "folder" })
-    .select()
-    .single();
+  const { data, error } = await supabase.rpc("create_space", {
+    space_name: name,
+    parent_space_id: input.parent_id ?? null,
+    space_color: input.color ?? "#0f766e",
+    space_icon: input.icon ?? "folder"
+  });
   if (error) throw error;
   return data as Space;
 }

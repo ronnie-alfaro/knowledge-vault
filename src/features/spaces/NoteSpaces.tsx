@@ -1,6 +1,7 @@
 import { Folder, Plus, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../../shared/components/Button";
+import { getErrorMessage } from "../../shared/lib/errors";
 import { useAddNoteToSpace, useCreateSpace, useRemoveNoteFromSpace, useSpaces, useSpacesForNote } from "./spaceHooks";
 
 export function NoteSpaces({ noteId }: { noteId: string }) {
@@ -22,7 +23,7 @@ export function NoteSpaces({ noteId }: { noteId: string }) {
       await addSpace.mutateAsync({ note_id: noteId, space_id: selectedSpaceId });
       setSelectedSpaceId("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not add space.");
+      setError(getErrorMessage(err, "Could not add space."));
     }
   }
 
@@ -34,7 +35,7 @@ export function NoteSpaces({ noteId }: { noteId: string }) {
       await addSpace.mutateAsync({ note_id: noteId, space_id: space.id });
       setNewSpaceName("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create space.");
+      setError(getErrorMessage(err, "Could not create space."));
     }
   }
 

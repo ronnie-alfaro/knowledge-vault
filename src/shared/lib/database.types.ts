@@ -80,6 +80,22 @@ export type Database = {
         Args: Record<string, never>;
         Returns: Array<{ total_notes: number; total_tags: number; total_files: number }>;
       };
+      get_llm_settings: {
+        Args: Record<string, never>;
+        Returns: Array<{ provider: "openai" | "anthropic" | "gemini"; model: string | null; api_key_preview: string | null; has_api_key: boolean; updated_at: string }>;
+      };
+      save_llm_settings: {
+        Args: { selected_provider: "openai" | "anthropic" | "gemini"; api_key?: string | null; selected_model?: string | null };
+        Returns: Array<{ provider: "openai" | "anthropic" | "gemini"; model: string | null; api_key_preview: string | null; has_api_key: boolean; updated_at: string }>;
+      };
+      clear_llm_api_key: {
+        Args: Record<string, never>;
+        Returns: Array<{ provider: "openai" | "anthropic" | "gemini"; model: string | null; api_key_preview: string | null; has_api_key: boolean; updated_at: string }>;
+      };
+      create_space: {
+        Args: { space_name: string; parent_space_id?: string | null; space_color?: string | null; space_icon?: string | null };
+        Returns: Space;
+      };
       match_similar_notes: {
         Args: { target_note_id: string; match_count?: number };
         Returns: Array<{ note_id: string; title: string; content: string; updated_at: string; score: number }>;
@@ -116,6 +132,7 @@ export type ContentEmbedding = Database["public"]["Tables"]["content_embeddings"
 export type KnowledgeNode = Database["public"]["Tables"]["knowledge_nodes"]["Row"];
 export type NodeRelation = Database["public"]["Tables"]["node_relations"]["Row"];
 export type NodeNoteLink = Database["public"]["Tables"]["node_note_links"]["Row"];
+export type LlmProvider = "openai" | "anthropic" | "gemini";
 
 export const knowledgeNodeTypes = ["note", "concept", "person", "project", "question", "book", "article", "place", "event", "idea"] as const;
 export type KnowledgeNodeType = (typeof knowledgeNodeTypes)[number];
