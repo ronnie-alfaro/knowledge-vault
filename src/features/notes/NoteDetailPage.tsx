@@ -28,6 +28,7 @@ export function NoteDetailPage() {
   const [content, setContent] = useState("");
   const [newTag, setNewTag] = useState("");
   const [shareUrl, setShareUrl] = useState("");
+  const [saveMessage, setSaveMessage] = useState("");
   const assigned = useMemo(() => new Set(note?.note_tags?.map((row: { tag_id: string }) => row.tag_id) ?? []), [note]);
 
   useEffect(() => {
@@ -53,8 +54,16 @@ export function NoteDetailPage() {
     return () => { supabase.removeChannel(channel); };
   }, [noteId]);
 
-  async function save() {
+  async function save(message = "Saved") {
+    setSaveMessage("");
     await updateNote.mutateAsync({ title, content });
+    setSaveMessage(message);
+  }
+
+  async function updateNoteState(patch: Parameters<typeof updateNote.mutateAsync>[0], message: string) {
+    setSaveMessage("");
+    await updateNote.mutateAsync(patch);
+    setSaveMessage(message);
   }
 
   async function createAndAssignTag() {
@@ -82,13 +91,14 @@ export function NoteDetailPage() {
   return (
     <section className="grid gap-6 xl:grid-cols-[1fr_320px]">
       <div>
-        <input className="w-full bg-transparent text-4xl font-semibold outline-none" value={title} onChange={(e) => setTitle(e.target.value)} onBlur={save} />
+        <input className="w-full bg-transparent text-4xl font-semibold outline-none" value={title} onChange={(e) => setTitle(e.target.value)} onBlur={() => void save("Title saved")} />
         <div className="mt-5"><RichTextEditor value={content} onChange={setContent} /></div>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Button onClick={save} disabled={updateNote.isPending}>Save</Button>
-          <Button variant="secondary" onClick={() => updateNote.mutate({ favorite: !note.favorite })}><Star size={16} /> {note.favorite ? "Unfavorite" : "Favorite"}</Button>
-          <Button variant="secondary" onClick={() => updateNote.mutate({ archived: !note.archived })}><Archive size={16} /> {note.archived ? "Restore" : "Archive"}</Button>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <Button onClick={() => void save()} disabled={updateNote.isPending}>{updateNote.isPending ? "Saving..." : "Save"}</Button>
+          <Button variant="secondary" disabled={updateNote.isPending} onClick={() => void updateNoteState({ favorite: !note.favorite }, note.favorite ? "Removed from favorites" : "Saved to favorites")}><Star size={16} /> {note.favorite ? "Unfavorite" : "Favorite"}</Button>
+          <Button variant="secondary" disabled={updateNote.isPending} onClick={() => void updateNoteState({ archived: !note.archived }, note.archived ? "Restored" : "Archived")}><Archive size={16} /> {note.archived ? "Restore" : "Archive"}</Button>
           <Button variant="danger" onClick={async () => { await deleteNote.mutateAsync(note.id); navigate("/notes"); }}><Trash2 size={16} /> Delete</Button>
+          {saveMessage ? <span className="text-sm font-medium text-vault-accent">{saveMessage}</span> : null}
         </div>
       </div>
       <aside className="space-y-4">

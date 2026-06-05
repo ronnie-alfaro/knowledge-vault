@@ -9,6 +9,7 @@ export function ProfilePage() {
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState("");
 
   useEffect(() => {
     if (profile) {
@@ -19,6 +20,7 @@ export function ProfilePage() {
   }, [profile]);
 
   async function uploadAvatar(file: File) {
+    setStatusMessage("");
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) return;
     const path = `${userData.user.id}/avatar-${Date.now()}-${file.name}`;
@@ -26,11 +28,14 @@ export function ProfilePage() {
     if (error) throw error;
     const { data } = supabase.storage.from("avatars").getPublicUrl(path);
     setAvatarUrl(data.publicUrl);
+    setStatusMessage("Avatar ready. Save profile to keep it.");
   }
 
-  function submit(event: FormEvent) {
+  async function submit(event: FormEvent) {
     event.preventDefault();
-    updateProfile.mutate({ display_name: displayName, bio, avatar_url: avatarUrl });
+    setStatusMessage("");
+    await updateProfile.mutateAsync({ display_name: displayName, bio, avatar_url: avatarUrl });
+    setStatusMessage("Profile saved");
   }
 
   if (isLoading) return <p>Loading profile...</p>;
@@ -45,7 +50,10 @@ export function ProfilePage() {
         </div>
         <label className="block text-sm font-medium">Display name<input className="mt-1 w-full rounded border border-vault-line bg-transparent px-3 py-2 dark:border-zinc-700" value={displayName} onChange={(e) => setDisplayName(e.target.value)} /></label>
         <label className="block text-sm font-medium">Bio<textarea className="mt-1 min-h-28 w-full rounded border border-vault-line bg-transparent px-3 py-2 dark:border-zinc-700" value={bio} onChange={(e) => setBio(e.target.value)} /></label>
-        <Button disabled={updateProfile.isPending}>{updateProfile.isPending ? "Saving..." : "Save profile"}</Button>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button disabled={updateProfile.isPending}>{updateProfile.isPending ? "Saving..." : "Save profile"}</Button>
+          {statusMessage ? <span className="text-sm font-medium text-vault-accent">{statusMessage}</span> : null}
+        </div>
       </form>
     </section>
   );

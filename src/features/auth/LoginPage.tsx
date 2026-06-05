@@ -27,7 +27,7 @@ export function LoginPage() {
   return (
     <main className="grid min-h-screen place-items-center bg-vault-paper p-4 dark:bg-zinc-950">
       <section className="w-full max-w-md rounded border border-vault-line bg-white p-6 shadow-soft dark:border-zinc-800 dark:bg-zinc-900">
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-vault-accent">Knowledge Vault</p>
+        <img className="mx-auto h-36 w-auto object-contain sm:h-44" src="/knowledge-vault-logo.jpg" alt="Knowledge Vault" />
         <h1 className="mt-2 text-3xl font-semibold">{mode === "signin" ? "Welcome back" : "Create your vault"}</h1>
         <form className="mt-6 space-y-4" onSubmit={submit}>
           <label className="block text-sm font-medium">Email<input className="mt-1 w-full rounded border border-vault-line bg-transparent px-3 py-2 dark:border-zinc-700" value={email} onChange={(e) => setEmail(e.target.value)} type="email" required /></label>
