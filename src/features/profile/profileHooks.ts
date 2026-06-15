@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../shared/lib/supabase";
 import type { Database } from "../../shared/lib/database.types";
+import { isAnonymousUser } from "../auth/authUtils";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
@@ -18,8 +19,8 @@ export function useProfile() {
         .from("profiles")
         .upsert({
           id: userData.user.id,
-          email: userData.user.email ?? "",
-          display_name: userData.user.user_metadata?.full_name ?? userData.user.user_metadata?.name ?? null,
+          email: profileEmail(userData.user),
+          display_name: userData.user.user_metadata?.full_name ?? userData.user.user_metadata?.name ?? (isAnonymousUser(userData.user) ? "Guest Vault" : null),
           avatar_url: userData.user.user_metadata?.avatar_url ?? null
         }, { onConflict: "id" })
         .select()
@@ -40,7 +41,7 @@ export function useUpdateProfile() {
         .from("profiles")
         .upsert({
           id: userData.user.id,
-          email: userData.user.email ?? "",
+          email: profileEmail(userData.user),
           display_name: profile.display_name.trim() || null,
           bio: profile.bio?.trim() || null,
           avatar_url: profile.avatar_url ?? null
@@ -55,4 +56,8 @@ export function useUpdateProfile() {
       queryClient.invalidateQueries({ queryKey: ["profile"] });
     }
   });
+}
+
+function profileEmail(user: { id: string; email?: string }) {
+  return user.email ?? `anonymous-${user.id}@knowledge-vault.local`;
 }

@@ -5,6 +5,7 @@ import { Button } from "../components/Button";
 import { supabase } from "../lib/supabase";
 import { cn } from "../lib/utils";
 import { useProfile } from "../../features/profile/profileHooks";
+import { isAnonymousProfileEmail } from "../../features/auth/authUtils";
 import { PresenceStrip } from "../../features/realtime/PresenceStrip";
 import { SpacesTree } from "../../features/spaces/SpacesTree";
 
@@ -22,7 +23,8 @@ export function AppLayout() {
   const navigate = useNavigate();
   const { data: profile } = useProfile();
   const [dark, setDark] = useState(() => localStorage.getItem("theme") === "dark");
-  const userName = profile?.display_name?.trim() || profile?.email?.split("@")[0] || "Vault user";
+  const isGuestProfile = isAnonymousProfileEmail(profile?.email);
+  const userName = profile?.display_name?.trim() || (isGuestProfile ? "Guest Vault" : profile?.email?.split("@")[0]) || "Vault user";
   const avatarSeed = encodeURIComponent(userName || profile?.email || "KV");
 
   useEffect(() => {
@@ -65,7 +67,7 @@ export function AppLayout() {
             <img className="h-9 w-9 rounded object-cover" src={profile?.avatar_url || `https://api.dicebear.com/9.x/initials/svg?seed=${avatarSeed}`} alt="" />
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{userName}</p>
-              <p className="truncate text-xs text-zinc-500">{profile?.email}</p>
+              <p className="truncate text-xs text-zinc-500">{isGuestProfile ? "Guest session" : profile?.email}</p>
             </div>
           </div>
           <Button variant="secondary" className="w-full" onClick={signOut}><LogOut size={16} /> Sign out</Button>

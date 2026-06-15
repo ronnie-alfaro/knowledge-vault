@@ -3,6 +3,8 @@ import { Button } from "../../shared/components/Button";
 import type { LlmProvider } from "../../shared/lib/database.types";
 import { getErrorMessage } from "../../shared/lib/errors";
 import { supabase } from "../../shared/lib/supabase";
+import { isAnonymousProfileEmail, isAnonymousUser } from "../auth/authUtils";
+import { useSession } from "../auth/authHooks";
 import { useCheckLlmConfig, useClearLlmApiKey, useLlmModels, useLlmSettings, useSaveLlmSettings } from "./llmSettingsHooks";
 import { useProfile, useUpdateProfile } from "./profileHooks";
 
@@ -13,6 +15,7 @@ const providerOptions: Array<{ value: LlmProvider; label: string; placeholder: s
 ];
 
 export function ProfilePage() {
+  const { user } = useSession();
   const { data: profile, isLoading } = useProfile();
   const { data: llmSettings, error: llmSettingsError } = useLlmSettings();
   const updateProfile = useUpdateProfile();
@@ -30,6 +33,10 @@ export function ProfilePage() {
   const [llmStatusMessage, setLlmStatusMessage] = useState("");
   const [llmError, setLlmError] = useState("");
   const [availableModels, setAvailableModels] = useState<Array<{ id: string; label: string; description?: string }>>([]);
+  const [guestEmail, setGuestEmail] = useState("");
+  const [guestPassword, setGuestPassword] = useState("");
+  const [guestStatus, setGuestStatus] = useState("");
+  const isGuest = isAnonymousUser(user) || isAnonymousProfileEmail(profile?.email);
 
   useEffect(() => {
     if (profile) {
@@ -126,11 +133,45 @@ export function ProfilePage() {
     }
   }
 
+  async function secureGuestVault(event: FormEvent) {
+    event.preventDefault();
+    setGuestStatus("");
+    try {
+      const { error } = await supabase.auth.updateUser({ email: guestEmail, password: guestPassword });
+      if (error) throw error;
+      await updateProfile.mutateAsync({
+        display_name: displayName || guestEmail.split("@")[0],
+        bio,
+        avatar_url: avatarUrl
+      });
+      setGuestPassword("");
+      setGuestStatus("Account upgrade started. Check your email if confirmation is required.");
+    } catch (error) {
+      setGuestStatus(getErrorMessage(error, "Could not secure guest vault."));
+    }
+  }
+
   if (isLoading) return <p>Loading profile...</p>;
 
   return (
     <section className="max-w-3xl space-y-6">
       <h1 className="text-3xl font-semibold">Profile</h1>
+      {isGuest ? (
+        <form className="space-y-4 rounded border border-vault-line bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900" onSubmit={secureGuestVault}>
+          <div>
+            <h2 className="text-lg font-semibold">Secure this guest vault</h2>
+            <p className="mt-1 text-sm text-zinc-500">You are exploring as a guest. Add email and password to keep this vault permanently.</p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block text-sm font-medium">Email<input className="mt-1 w-full rounded border border-vault-line bg-transparent px-3 py-2 dark:border-zinc-700" value={guestEmail} onChange={(event) => setGuestEmail(event.target.value)} type="email" required /></label>
+            <label className="block text-sm font-medium">Password<input className="mt-1 w-full rounded border border-vault-line bg-transparent px-3 py-2 dark:border-zinc-700" value={guestPassword} onChange={(event) => setGuestPassword(event.target.value)} type="password" minLength={8} required /></label>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button disabled={updateProfile.isPending}>Save this vault</Button>
+            {guestStatus ? <span className="text-sm font-medium text-vault-accent">{guestStatus}</span> : null}
+          </div>
+        </form>
+      ) : null}
       <form className="mt-6 space-y-5 rounded border border-vault-line bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900" onSubmit={submit}>
         <div className="flex items-center gap-4">
           <img className="h-20 w-20 rounded object-cover" src={avatarUrl || `https://api.dicebear.com/9.x/initials/svg?seed=${profile?.email}`} alt="" />

@@ -3,7 +3,7 @@ project_id = "knowledge-vault"
 [api]
 enabled = true
 port = 54321
-schemas = ["public", "storage", "graphql_public"]
+schemas = ["public", "graphql_public"]
 extra_search_path = ["public", "extensions"]
 max_rows = 1000
 
@@ -17,19 +17,26 @@ port = 54323
 
 [auth]
 enabled = true
-site_url = "http://localhost:5173"
-additional_redirect_urls = ["http://localhost:5173/auth/callback", "http://localhost:5173/update-password"]
+site_url = "https://knowledge-vault.ronnie-alfaro.workers.dev"
+additional_redirect_urls = ["https://knowledge-vault.ronnie-alfaro.workers.dev/auth/callback", "https://knowledge-vault.ronnie-alfaro.workers.dev/update-password", "http://localhost:5173/auth/callback", "http://localhost:5173/update-password"]
 jwt_expiry = 3600
 enable_signup = true
+enable_anonymous_sign_ins = true
 
 [auth.email]
 enable_signup = true
 double_confirm_changes = true
-enable_confirmations = false
+enable_confirmations = true
+max_frequency = "1m0s"
+otp_length = 8
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
 
 [storage]
 enabled = true
-file_size_limit = "25MiB"
+file_size_limit = "50MiB"
 
 [edge_runtime]
 enabled = true
